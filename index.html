@@ -76,13 +76,51 @@ header{display:flex;justify-content:space-between;align-items:center;
   background:var(--rec);transition:border-radius .2s,width .2s,height .2s}
 #recBtn.on::after{width:24px;height:24px;border-radius:5px}
 #recBtn.on{box-shadow:0 0 24px rgba(255,82,82,.35)}
+
+.hRight{display:flex;align-items:center;gap:6px}
+.gearBtn{background:none;border:none;color:var(--dim);font-size:19px;cursor:pointer;padding:2px 6px}
+#settings{display:none;margin:14px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+#settings.show{display:block}
+#settings .sTitle{font-family:var(--mono);font-size:10px;letter-spacing:.25em;color:var(--amber);margin-bottom:4px}
+#settings label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--dim);margin:12px 0 5px}
+#settings input,#settings select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+  color:var(--tx);padding:10px;font-size:13px}
+#settings .note{font-size:11px;color:var(--dim);margin-top:10px;line-height:1.7}
+#saveCfg{margin-top:14px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;padding:10px 18px;
+  border-radius:8px;border:1px solid var(--amber);background:none;color:var(--amber);cursor:pointer}
+.aiRow{display:none;gap:8px;margin-top:8px;flex-wrap:wrap}
+.aiOut{margin-top:10px;border-left:2px solid var(--amber);padding:5px 10px;cursor:pointer}
+.aiLabel{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--amber);margin-bottom:4px}
+.aiText{font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
 </style>
 </head>
 <body>
 <header>
   <div class="brand">VOICE LAB<small>TERU LAB · FIELD RECORDER</small></div>
-  <div class="led" id="led"><i></i><span id="ledTx">STANDBY</span></div>
+  <div class="hRight">
+    <div class="led" id="led"><i></i><span id="ledTx">STANDBY</span></div>
+    <button class="gearBtn" id="gearBtn" aria-label="設定">⚙</button>
+  </div>
 </header>
+
+<div id="settings">
+  <div class="sTitle">AI SETTINGS</div>
+  <label>PROVIDER</label>
+  <select id="cfgProv">
+    <option value="anthropic">Anthropic (Claude)</option>
+    <option value="openai">OpenAI互換 (GLM等)</option>
+  </select>
+  <label>ENDPOINT (OpenAI互換のみ)</label>
+  <input id="cfgEp" placeholder="https://open.bigmodel.cn/api/paas/v4/chat/completions">
+  <label>MODEL</label>
+  <input id="cfgModel" placeholder="claude-sonnet-4-6 / glm-4-flash など">
+  <label>API KEY</label>
+  <input id="cfgKey" type="password" placeholder="sk-...">
+  <label>ENGRAM PROJECT</label>
+  <input id="cfgProj" placeholder="inbox (エクスポート時のproject値)">
+  <button id="saveCfg">保存</button>
+  <div class="note">キーはこの端末のブラウザ内(localStorage)にのみ保存されます。OpenAI互換エンドポイントはCORS対応が必要 — ブロックされる場合はAnthropicを使用してください。</div>
+</div>
 
 <section class="deck">
   <div class="timecode" id="tc">00:00.0</div>
@@ -120,9 +158,10 @@ const statusEl=$("status");
 const setStatus=(msg,warn)=>{statusEl.textContent=msg||"";statusEl.style.color=warn?"var(--rec)":"var(--dim)"};
 
 /* ---------- mode chips ---------- */
+const AUTOREC=location.hash.includes("autorec");
 function renderMode(){
   document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("sel",c.dataset.m===mode));
-  history.replaceState(null,"","#m="+mode);
+  history.replaceState(null,"","#m="+mode+(AUTOREC?"&autorec":""));
 }
 document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
   if(recording){setStatus("録音中はモード変更できません",true);return}
@@ -244,6 +283,49 @@ async function stopRec(){
 }
 $("recBtn").onclick=()=>recording?stopRec():startRec();
 
+/* ---------- AI settings & call ---------- */
+const cfgLoad=()=>JSON.parse(localStorage.getItem("vl_ai")||"null");
+$("gearBtn").onclick=()=>{
+  const p=$("settings"); p.classList.toggle("show");
+  const c=cfgLoad(); if(c){$("cfgProv").value=c.prov;$("cfgEp").value=c.ep||"";$("cfgModel").value=c.model||"";$("cfgKey").value=c.key||"";$("cfgProj").value=c.proj||""}
+};
+$("saveCfg").onclick=()=>{
+  localStorage.setItem("vl_ai",JSON.stringify({
+    prov:$("cfgProv").value, ep:$("cfgEp").value.trim(),
+    model:$("cfgModel").value.trim(), key:$("cfgKey").value.trim(),
+    proj:$("cfgProj").value.trim()
+  }));
+  $("settings").classList.remove("show"); setStatus("AI設定を保存しました");
+};
+const AI_PROMPTS={
+  sum:{l:"要約",p:"以下の音声メモの文字起こしを日本語で簡潔に要約してください。要点のみ、前置き不要。"},
+  bul:{l:"箇条書き",p:"以下の音声メモの文字起こしを、内容を保ったまま整理された箇条書きに変換してください。前置き不要。"},
+  todo:{l:"TODO抽出",p:"以下の音声メモの文字起こしからTODO・アクションアイテムのみを抽出して箇条書きにしてください。無ければ「なし」とだけ答えてください。"}
+};
+async function callAI(promptKey,text){
+  const cfg=cfgLoad();
+  if(!cfg||!cfg.key) throw new Error("⚙からAPIキーを設定してください");
+  const msg=AI_PROMPTS[promptKey].p+"\n\n---\n"+text;
+  let r;
+  if(cfg.prov==="anthropic"){
+    r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+      headers:{"content-type":"application/json","x-api-key":cfg.key,
+        "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:cfg.model||"claude-sonnet-4-6",max_tokens:1024,
+        messages:[{role:"user",content:msg}]})});
+    if(!r.ok) throw new Error("API "+r.status);
+    const d=await r.json();
+    return (d.content||[]).map(c=>c.text||"").join("").trim();
+  }
+  if(!cfg.ep) throw new Error("エンドポイントを設定してください");
+  r=await fetch(cfg.ep,{method:"POST",
+    headers:{"content-type":"application/json","authorization":"Bearer "+cfg.key},
+    body:JSON.stringify({model:cfg.model,messages:[{role:"user",content:msg}]})});
+  if(!r.ok) throw new Error("API "+r.status);
+  const d=await r.json();
+  return d.choices[0].message.content.trim();
+}
+
 /* ---------- list ---------- */
 function fmtDate(iso){const d=new Date(iso);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`}
@@ -265,12 +347,18 @@ async function renderList(){
         ${m.blob?`<button class="playBtn">▶</button>`:""}
       </div>
       <div class="text ${m.text?"":"none"}">${m.text?escapeHtml(m.text):"(文字起こしなし)"}</div>
+      ${m.ai?`<div class="aiOut" title="タップでコピー"><div class="aiLabel">AI · ${escapeHtml(m.ai.label)}</div><div class="aiText">${escapeHtml(m.ai.text)}</div></div>`:""}
       <div class="acts">
-        ${m.text?`<button data-a="copy">COPY</button><button data-a="edit">EDIT</button>`:""}
+        ${m.text?`<button data-a="copy">COPY</button><button data-a="edit">EDIT</button><button data-a="ai">AI ▾</button>`:""}
+        ${(navigator.share&&(m.text||m.blob))?`<button data-a="share">SHARE</button>`:""}
         ${m.blob?`<button data-a="dl">SAVE .WEBM</button>`:""}
         ${m.blob&&m.text?`<button data-a="set">SAVE SET</button>`:""}
+        ${m.text?`<button data-a="engram">EXPORT ENGRAM</button>`:""}
         <button data-a="del" class="danger">DELETE</button>
-      </div>`;
+      </div>
+      ${m.text?`<div class="acts aiRow">
+        <button data-p="sum">要約</button><button data-p="bul">箇条書き</button><button data-p="todo">TODO抽出</button>
+      </div>`:""}`;
     const play=el.querySelector(".playBtn");
     if(play) play.onclick=()=>togglePlay(m,play);
     el.querySelector('[data-a="del"]').onclick=async()=>{
@@ -288,12 +376,66 @@ async function renderList(){
       a.download="voicememo_"+m.ts.replace(/[-:T]/g,"").slice(0,12)+".webm";
       a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000);
     };
+    const aiBtn=el.querySelector('[data-a="ai"]');
+    if(aiBtn){
+      const row=el.querySelector(".aiRow");
+      aiBtn.onclick=()=>{row.style.display=row.style.display==="flex"?"none":"flex"};
+      row.querySelectorAll("button").forEach(b=>b.onclick=async()=>{
+        const lbl=AI_PROMPTS[b.dataset.p].l; b.textContent="…処理中";
+        try{
+          const out=await callAI(b.dataset.p,m.text);
+          m.ai={label:lbl,text:out}; await saveMemo(m); renderList();
+        }catch(err){setStatus("AI失敗: "+err.message,true); b.textContent=lbl}
+      });
+    }
+    const aiOut=el.querySelector(".aiOut");
+    if(aiOut) aiOut.onclick=async()=>{
+      try{await navigator.clipboard.writeText(m.ai.text); setStatus("AI結果をコピーしました")}catch(_){}
+    };
+    const sh=el.querySelector('[data-a="share"]');
+    if(sh) sh.onclick=async()=>{
+      try{
+        if(m.blob&&navigator.canShare){
+          const f=new File([m.blob],"voicememo_"+m.ts.replace(/[-:T]/g,"").slice(0,12)+".webm",{type:m.blob.type});
+          if(navigator.canShare({files:[f]})){
+            await navigator.share({files:[f],text:m.text||undefined}); return;
+          }
+        }
+        await navigator.share({text:m.text+(m.ai?"\n\n["+m.ai.label+"]\n"+m.ai.text:"")});
+      }catch(err){ if(err.name!=="AbortError") setStatus("共有失敗: "+err.message,true) }
+    };
+    const eg=el.querySelector('[data-a="engram"]');
+    if(eg) eg.onclick=()=>{
+      const id="vm_"+m.ts.replace(/[-:T]/g,"").slice(0,12);
+      const proj=(cfgLoad()||{}).proj||"inbox";
+      const tags=["voice-memo"]; if(m.ai) tags.push(m.ai.label);
+      const md=[
+        "---",
+        "id: "+id,
+        "created: "+m.ts,
+        "source: voice",
+        "project: "+proj,
+        "tags: ["+tags.join(", ")+"]",
+        "---",
+        "",
+        "# "+(m.title||"音声メモ"),
+        "",
+        (m.ai?m.ai.text:m.text),
+        ...(m.ai?["","## Transcript","",m.text]:[]),
+        ""
+      ].join("\n");
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(new Blob([md],{type:"text/markdown"}));
+      a.download=id+".md"; a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+      setStatus("Engramエントリを書き出しました");
+    };
     const st=el.querySelector('[data-a="set"]');
     if(st) st.onclick=async()=>{
       const base="voicememo_"+m.ts.replace(/[-:T]/g,"").slice(0,12);
       const zip=makeZip([
         {name:base+".webm",data:new Uint8Array(await m.blob.arrayBuffer())},
-        {name:base+".txt",data:new TextEncoder().encode(m.text)}
+        {name:base+".txt",data:new TextEncoder().encode(m.text+(m.ai?"\n\n--- AI ("+m.ai.label+") ---\n"+m.ai.text:""))}
       ]);
       const a=document.createElement("a");
       a.href=URL.createObjectURL(zip); a.download=base+".zip"; a.click();
@@ -353,6 +495,7 @@ function makeZip(files){
 }
 
 renderList();
+if(AUTOREC) setTimeout(()=>{ if(!recording) startRec() },300);
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 if(!window.isSecureContext) setStatus("非セキュアコンテキスト — マイク不可。HTTPS/localhostで開いてください",true);
 </script>
