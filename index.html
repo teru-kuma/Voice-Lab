@@ -608,7 +608,23 @@ function makeZip(files){
 
 renderList();
 if(AUTOREC) setTimeout(()=>{ if(!recording) startRec() },300);
-if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js").then(reg=>{
+    reg.addEventListener("updatefound",()=>{
+      const nw=reg.installing;
+      nw&&nw.addEventListener("statechange",()=>{
+        if(nw.state==="installed"&&navigator.serviceWorker.controller){
+          setStatus("新バージョンを取得 — 開き直すと反映されます");
+        }
+      });
+    });
+    setInterval(()=>reg.update(),60000); // 1分ごとに更新チェック
+  }).catch(()=>{});
+  let reloaded=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+    if(reloaded)return; reloaded=true; location.reload();
+  });
+}
 if(!window.isSecureContext) setStatus("非セキュアコンテキスト — マイク不可。HTTPS/localhostで開いてください",true);
 </script>
 </body>
