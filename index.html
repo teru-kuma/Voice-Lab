@@ -263,7 +263,6 @@ if(!["both","rec","stt"].includes(mode)) mode = "both";
 let recording=false, mediaRec=null, stream=null, chunks=[], mimeType="";
 let audioCtx=null, analyser=null, rafId=0, t0=0;
 let recog=null, sttActive=false, finalText="";
-let lastFinalChunk="", sttRestartedAt=0;
 let wakeLock=null, playingAudio=null, playingBtn=null;
 
 const $=id=>document.getElementById(id);
@@ -315,6 +314,18 @@ function loop(){
 
 /* ---------- speech recognition ---------- */
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+function appendFinalChunk(chunk){
+  if(!chunk) return;
+  // 再起動をまたぐと、直前に確定済みの末尾と同じ内容が新しい確定結果の先頭に
+  // また現れることがある(Android等)。finalText の末尾と chunk の先頭で
+  // 重なっている部分を探し、重複分を除いた残りだけを追記する。
+  const maxLen=Math.min(finalText.length,chunk.length,300);
+  let overlap=0;
+  for(let len=maxLen;len>0;len--){
+    if(finalText.slice(-len)===chunk.slice(0,len)){ overlap=len; break; }
+  }
+  finalText+=chunk.slice(overlap);
+}
 function startSTT(){
   if(!SR){setStatus("このブラウザは音声認識非対応(録音は可能)",true);return}
   recog=new SR();
@@ -329,10 +340,7 @@ function startSTT(){
       const r=e.results[i];
       if(r.isFinal){
         finalizedCount=i+1;
-        const chunk=r[0].transcript;
-        // 再起動直後、直前の確定結果をブラウザが再送してくることがあるため直近2秒以内の同一内容は無視する
-        if(chunk===lastFinalChunk && performance.now()-sttRestartedAt<2000) continue;
-        finalText+=chunk; lastFinalChunk=chunk;
+        appendFinalChunk(r[0].transcript);
       } else interim+=r[0].transcript;
     }
     $("finalTx").textContent=finalText;
@@ -344,14 +352,14 @@ function startSTT(){
       sttActive=false; setStatus("音声認識が使用不可 — 録音は継続中",true);
     }
   };
-  recog.onend=()=>{ if(recording&&sttActive){ sttRestartedAt=performance.now(); startSTT(); } };
+  recog.onend=()=>{ if(recording&&sttActive){ startSTT(); } };
   try{recog.start(); sttActive=true;}catch(_){setStatus("音声認識の起動に失敗(録音は継続)",true)}
 }
 function stopSTT(){sttActive=false; if(recog){recog.onend=null; try{recog.stop()}catch(_){} recog=null}}
 
 /* ---------- record ---------- */
 async function startRec(){
-  finalText=""; lastFinalChunk=""; sttRestartedAt=0;
+  finalText="";
   $("finalTx").textContent=""; $("interim").textContent="";
   chunks=[];
   const useRec=(mode!=="stt"), useSTT=(mode!=="rec");
