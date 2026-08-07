@@ -149,6 +149,14 @@ header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:cen
     <button id="fsUp" type="button" aria-label="文字を大きく">A＋</button>
   </div>
 
+  <div class="sTitle" style="margin-top:20px">バックアップ</div>
+  <div class="fsRow">
+    <button id="bkExport" type="button">エクスポート</button>
+    <button id="bkImport" type="button">インポート</button>
+  </div>
+  <input id="bkFile" type="file" accept="application/json,.json" style="display:none">
+  <div class="note">全メモ(音声+文字起こし)を1つのファイルにまとめて書き出し/読み込みします。ブラウザデータを消すとメモも消えるため、定期的にエクスポートして保存しておくことをおすすめします。</div>
+
   <div class="sTitle" style="margin-top:20px">AI SETTINGS</div>
   <label>PROVIDER</label>
   <select id="cfgProv">
@@ -269,7 +277,7 @@ header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:cen
 <script>
 "use strict";
 /* ---------- version ---------- */
-const APP_VERSION="1.1"; // リリースごとに更新する
+const APP_VERSION="1.2"; // リリースごとに更新する
 console.log("[VOICE LAB] v"+APP_VERSION);
 document.getElementById("verTx").textContent="v"+APP_VERSION;
 
@@ -322,6 +330,53 @@ const idbReq=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=
 async function saveMemo(m){return idbReq((await tx("readwrite")).put(m))}
 async function allMemos(){return idbReq((await tx("readonly")).getAll())}
 async function delMemo(id){return idbReq((await tx("readwrite")).delete(id))}
+
+/* ---------- backup / restore ---------- */
+function blobToBase64(blob){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.slice(r.result.indexOf(",")+1));
+    r.onerror=()=>rej(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+function base64ToBlob(b64,mime){
+  const bin=atob(b64), arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  return new Blob([arr],{type:mime||""});
+}
+async function exportBackup(){
+  const memos=await allMemos();
+  setStatus("バックアップを作成中…");
+  const out=[];
+  for(const m of memos){
+    out.push({
+      id:m.id, ts:m.ts, dur:m.dur, mime:m.mime||"", text:m.text||"", title:m.title||"",
+      ai:m.ai||null, audio: m.blob ? await blobToBase64(m.blob) : null
+    });
+  }
+  const payload={app:"voicelab",version:1,exportedAt:new Date().toISOString(),memos:out};
+  const blob=new Blob([JSON.stringify(payload)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="voicelab_backup_"+new Date().toISOString().replace(/[-:T]/g,"").slice(0,14)+".json";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  setStatus(memos.length+"件をバックアップしました");
+}
+async function importBackup(file){
+  const payload=JSON.parse(await file.text());
+  if(payload.app!=="voicelab"||!Array.isArray(payload.memos)) throw new Error("バックアップファイルの形式が不正です");
+  setStatus("復元中…");
+  for(const m of payload.memos){
+    const memo={id:m.id, ts:m.ts, dur:m.dur, mime:m.mime||"", text:m.text||"", title:m.title||"",
+      blob: m.audio ? base64ToBlob(m.audio,m.mime) : null};
+    if(m.ai) memo.ai=m.ai;
+    await saveMemo(memo);
+  }
+  setStatus(payload.memos.length+"件のメモを復元しました");
+  renderList();
+}
 
 /* ---------- clock / waveform ---------- */
 const cv=$("wave"), ctx2=cv.getContext("2d");
@@ -461,6 +516,16 @@ $("saveCfg").onclick=()=>{
     proj:$("cfgProj").value.trim()
   }));
   $("settings").classList.remove("show"); setStatus("AI設定を保存しました");
+};
+$("bkExport").onclick=async()=>{
+  try{await exportBackup()}catch(err){setStatus("エクスポート失敗: "+err.message,true)}
+};
+$("bkImport").onclick=()=>$("bkFile").click();
+$("bkFile").onchange=async e=>{
+  const file=e.target.files[0];
+  e.target.value="";
+  if(!file) return;
+  try{await importBackup(file)}catch(err){setStatus("インポート失敗: "+err.message,true)}
 };
 const AI_PROMPTS={
   sum:{l:"要約",p:"以下の音声メモの文字起こしを日本語で簡潔に要約してください。要点のみ、前置き不要。"},
