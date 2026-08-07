@@ -20,6 +20,7 @@ body{padding-bottom:120px}
 header{display:flex;justify-content:space-between;align-items:center;
   padding:14px 16px 10px;border-bottom:1px solid var(--line)}
 .brand{font-family:var(--mono);font-size:15px;letter-spacing:.18em;color:var(--amber)}
+.brand .ver{font-size:10px;letter-spacing:.05em;color:var(--dim);margin-left:4px;vertical-align:middle}
 .brand small{display:block;font-size:9px;letter-spacing:.3em;color:var(--dim);margin-top:2px}
 .led{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--dim)}
 .led i{width:8px;height:8px;border-radius:50%;background:#2A3742;display:inline-block}
@@ -124,7 +125,7 @@ header{display:flex;justify-content:space-between;align-items:center;
 </head>
 <body>
 <header>
-  <div class="brand">VOICE LAB<small>TERU LAB · FIELD RECORDER · <span id="verTx"></span></small></div>
+  <div class="brand">VOICE LAB<span class="ver" id="verTx"></span><small>TERU LAB · FIELD RECORDER</small></div>
   <div class="hRight">
     <div class="led" id="led"><i></i><span id="ledTx">STANDBY</span></div>
     <button class="gearBtn" id="helpBtn" aria-label="使い方">?</button>
@@ -253,9 +254,9 @@ header{display:flex;justify-content:space-between;align-items:center;
 <script>
 "use strict";
 /* ---------- version ---------- */
-const APP_VERSION="v7 (stt-dedup)"; // sw.js の CACHE 名の数字と合わせて更新する
-console.log("[VOICE LAB]", APP_VERSION);
-document.getElementById("verTx").textContent=APP_VERSION;
+const APP_VERSION="1.0"; // リリースごとに更新する
+console.log("[VOICE LAB] v"+APP_VERSION);
+document.getElementById("verTx").textContent="v"+APP_VERSION;
 
 /* ---------- state ---------- */
 let mode = (location.hash.match(/m=(\w+)/)||[])[1] || "both";
