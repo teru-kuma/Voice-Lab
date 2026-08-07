@@ -314,11 +314,16 @@ function startSTT(){
   if(!SR){setStatus("このブラウザは音声認識非対応(録音は可能)",true);return}
   recog=new SR();
   recog.lang="ja-JP"; recog.continuous=true; recog.interimResults=true;
+  let finalizedCount=0;
   recog.onresult=e=>{
+    // e.resultIndex は端末によって(特にAndroidの継続認識で)正しく進まないことがあるため信用せず、
+    // このセッション内で自前に「何番目まで確定として処理済みか」を finalizedCount で管理する。
     let interim="";
-    for(let i=e.resultIndex;i<e.results.length;i++){
+    for(let i=0;i<e.results.length;i++){
+      if(i<finalizedCount) continue;
       const r=e.results[i];
       if(r.isFinal){
+        finalizedCount=i+1;
         const chunk=r[0].transcript;
         // 再起動直後、直前の確定結果をブラウザが再送してくることがあるため直近2秒以内の同一内容は無視する
         if(chunk===lastFinalChunk && performance.now()-sttRestartedAt<2000) continue;
