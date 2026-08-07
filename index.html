@@ -13,57 +13,58 @@
   --tx:#D8E1E8; --dim:#6B7A86; --amber:#F0A83C; --rec:#FF5252; --ok:#4FD48A;
   --mono:"SFMono-Regular","Roboto Mono",Consolas,monospace;
   --sans:system-ui,"Noto Sans JP",sans-serif;
+  --fs:1; /* 文字サイズ倍率。JSからdocumentElementに設定される */
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100%}
 body{padding-bottom:120px}
-header{display:flex;justify-content:space-between;align-items:center;
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px;
   padding:14px 16px 10px;border-bottom:1px solid var(--line)}
-.brand{font-family:var(--mono);font-size:15px;letter-spacing:.18em;color:var(--amber)}
-.brand .ver{font-size:10px;letter-spacing:.05em;color:var(--dim);margin-left:4px;vertical-align:middle}
-.brand small{display:block;font-size:9px;letter-spacing:.3em;color:var(--dim);margin-top:2px}
-.led{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--dim)}
-.led i{width:8px;height:8px;border-radius:50%;background:#2A3742;display:inline-block}
+.brand{font-family:var(--mono);font-size:calc(15px * var(--fs));letter-spacing:.18em;color:var(--amber)}
+.brand .ver{font-size:calc(10px * var(--fs));letter-spacing:.05em;color:var(--dim);margin-left:4px;vertical-align:middle}
+.brand small{display:block;font-size:calc(9px * var(--fs));letter-spacing:.3em;color:var(--dim);margin-top:2px}
+.led{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:calc(10px * var(--fs));color:var(--dim)}
+.led i{width:8px;height:8px;border-radius:50%;background:#2A3742;display:inline-block;flex-shrink:0}
 .led.rec i{background:var(--rec);box-shadow:0 0 8px var(--rec);animation:blink 1s infinite}
 .led.rec{color:var(--rec)}
 @keyframes blink{50%{opacity:.3}}
 
 .deck{margin:14px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.timecode{font-family:var(--mono);font-size:44px;text-align:center;padding:18px 0 4px;
+.timecode{font-family:var(--mono);font-size:calc(44px * var(--fs));text-align:center;padding:18px 0 4px;
   letter-spacing:.06em;color:var(--tx);font-variant-numeric:tabular-nums}
 .timecode.on{color:var(--amber)}
 #wave{display:block;width:100%;height:64px;background:var(--panel2)}
-.modes{display:flex;gap:8px;padding:12px;justify-content:center;border-top:1px solid var(--line)}
-.chip{font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:8px 14px;border-radius:20px;
+.modes{display:flex;flex-wrap:wrap;gap:8px;padding:12px;justify-content:center;border-top:1px solid var(--line)}
+.chip{font-family:var(--mono);font-size:calc(11px * var(--fs));letter-spacing:.08em;padding:8px 14px;border-radius:20px;
   border:1px solid var(--line);color:var(--dim);background:none;cursor:pointer}
 .chip.sel{border-color:var(--amber);color:var(--amber)}
-#status{font-family:var(--mono);font-size:10px;color:var(--dim);text-align:center;padding:0 12px 12px;min-height:14px}
+#status{font-family:var(--mono);font-size:calc(10px * var(--fs));color:var(--dim);text-align:center;padding:0 12px 12px;min-height:14px}
 
 #liveBox{margin:0 12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;
-  padding:14px;display:none;font-size:15px;line-height:1.8}
+  padding:14px;display:none;font-size:calc(15px * var(--fs));line-height:1.8}
 #liveBox.show{display:block}
-#liveLabel{font-family:var(--mono);font-size:9px;letter-spacing:.25em;color:var(--dim);margin-bottom:8px}
+#liveLabel{font-family:var(--mono);font-size:calc(9px * var(--fs));letter-spacing:.25em;color:var(--dim);margin-bottom:8px}
 #interim{color:var(--dim)}
 
 .listHead{display:flex;justify-content:space-between;align-items:baseline;margin:18px 16px 8px}
-.listHead h2{font-family:var(--mono);font-size:11px;letter-spacing:.25em;color:var(--dim);font-weight:normal}
-#count{font-family:var(--mono);font-size:11px;color:var(--amber)}
+.listHead h2{font-family:var(--mono);font-size:calc(11px * var(--fs));letter-spacing:.25em;color:var(--dim);font-weight:normal}
+#count{font-family:var(--mono);font-size:calc(11px * var(--fs));color:var(--amber)}
 #memoList{margin:0 12px;display:flex;flex-direction:column;gap:10px}
-.empty{color:var(--dim);font-size:13px;text-align:center;padding:32px 16px;line-height:1.9}
+.empty{color:var(--dim);font-size:calc(13px * var(--fs));text-align:center;padding:32px 16px;line-height:1.9}
 
 .memo{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-.memo .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.memo .meta{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.05em}
+.memo .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.memo .meta{font-family:var(--mono);font-size:calc(10px * var(--fs));color:var(--dim);letter-spacing:.05em}
 .memo .dur{color:var(--amber)}
 .playBtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--amber);background:none;
   color:var(--amber);font-size:14px;flex-shrink:0;cursor:pointer}
 .playBtn.playing{background:var(--amber);color:#0B0F14}
-.memo .text{font-size:14px;line-height:1.8;margin-top:10px;white-space:pre-wrap;word-break:break-word}
+.memo .text{font-size:calc(14px * var(--fs));line-height:1.8;margin-top:10px;white-space:pre-wrap;word-break:break-word}
 .memo .text.none{color:var(--dim);font-style:italic}
 .memo textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;
-  color:var(--tx);font-size:14px;line-height:1.7;padding:10px;margin-top:10px;min-height:90px;font-family:var(--sans)}
+  color:var(--tx);font-size:calc(14px * var(--fs));line-height:1.7;padding:10px;margin-top:10px;min-height:90px;font-family:var(--sans)}
 .acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.acts button{font-family:var(--mono);font-size:10px;letter-spacing:.08em;padding:7px 12px;border-radius:8px;
+.acts button{font-family:var(--mono);font-size:calc(10px * var(--fs));letter-spacing:.08em;padding:7px 12px;border-radius:8px;
   border:1px solid var(--line);background:none;color:var(--dim);cursor:pointer}
 .acts button:active{border-color:var(--amber);color:var(--amber)}
 .acts .danger:active{border-color:var(--rec);color:var(--rec)}
@@ -71,28 +72,34 @@ header{display:flex;justify-content:space-between;align-items:center;
 .dock{position:fixed;left:0;right:0;bottom:0;padding:14px 0 calc(14px + env(safe-area-inset-bottom));
   display:flex;justify-content:center;background:linear-gradient(to top,var(--bg) 70%,transparent)}
 #recBtn{width:76px;height:76px;border-radius:50%;border:2px solid var(--rec);background:var(--panel);
-  cursor:pointer;position:relative;transition:transform .1s}
+  cursor:pointer;position:relative;transition:transform .1s;flex-shrink:0}
 #recBtn:active{transform:scale(.94)}
 #recBtn::after{content:"";position:absolute;inset:0;margin:auto;width:30px;height:30px;border-radius:50%;
   background:var(--rec);transition:border-radius .2s,width .2s,height .2s}
 #recBtn.on::after{width:24px;height:24px;border-radius:5px}
 #recBtn.on{box-shadow:0 0 24px rgba(255,82,82,.35)}
 
-.hRight{display:flex;align-items:center;gap:6px}
-.gearBtn{background:none;border:none;color:var(--dim);font-size:19px;cursor:pointer;padding:2px 6px}
+.hRight{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.gearBtn{background:none;border:none;color:var(--dim);font-size:calc(19px * var(--fs));cursor:pointer;padding:2px 6px}
 #settings{display:none;margin:14px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
 #settings.show{display:block}
-#settings .sTitle{font-family:var(--mono);font-size:10px;letter-spacing:.25em;color:var(--amber);margin-bottom:4px}
-#settings label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--dim);margin:12px 0 5px}
+#settings .sTitle{font-family:var(--mono);font-size:calc(10px * var(--fs));letter-spacing:.25em;color:var(--amber);margin-bottom:4px}
+#settings label{display:block;font-family:var(--mono);font-size:calc(9px * var(--fs));letter-spacing:.2em;color:var(--dim);margin:12px 0 5px}
 #settings input,#settings select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;
-  color:var(--tx);padding:10px;font-size:13px}
-#settings .note{font-size:11px;color:var(--dim);margin-top:10px;line-height:1.7}
-#saveCfg{margin-top:14px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;padding:10px 18px;
+  color:var(--tx);padding:10px;font-size:calc(13px * var(--fs))}
+#settings .note{font-size:calc(11px * var(--fs));color:var(--dim);margin-top:10px;line-height:1.7}
+#saveCfg{margin-top:14px;font-family:var(--mono);font-size:calc(11px * var(--fs));letter-spacing:.1em;padding:10px 18px;
   border-radius:8px;border:1px solid var(--amber);background:none;color:var(--amber);cursor:pointer}
 .aiRow{display:none;gap:8px;margin-top:8px;flex-wrap:wrap}
 .aiOut{margin-top:10px;border-left:2px solid var(--amber);padding:5px 10px;cursor:pointer}
-.aiLabel{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--amber);margin-bottom:4px}
-.aiText{font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.aiLabel{font-family:var(--mono);font-size:calc(9px * var(--fs));letter-spacing:.2em;color:var(--amber);margin-bottom:4px}
+.aiText{font-size:calc(13px * var(--fs));line-height:1.7;white-space:pre-wrap;word-break:break-word}
+
+.fsRow{display:flex;align-items:center;gap:10px}
+.fsRow button{font-family:var(--mono);font-size:calc(13px * var(--fs));padding:8px 14px;border-radius:8px;
+  border:1px solid var(--line);background:none;color:var(--tx);cursor:pointer}
+.fsRow button:active{border-color:var(--amber);color:var(--amber)}
+.fsRow span{font-family:var(--mono);font-size:calc(11px * var(--fs));color:var(--amber);min-width:3.2em;text-align:center}
 
 /* ---------- help overlay ---------- */
 #helpOv{position:fixed;inset:0;background:rgba(6,9,12,.92);backdrop-filter:blur(3px);
@@ -101,26 +108,26 @@ header{display:flex;justify-content:space-between;align-items:center;
 .helpWrap{max-width:640px;margin:0 auto;padding:16px 16px calc(40px + env(safe-area-inset-bottom))}
 .helpBar{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;
   padding:12px 2px;background:linear-gradient(to bottom,rgba(6,9,12,.98) 70%,transparent);margin-bottom:6px}
-.helpBar .t{font-family:var(--mono);font-size:13px;letter-spacing:.22em;color:var(--amber)}
+.helpBar .t{font-family:var(--mono);font-size:calc(13px * var(--fs));letter-spacing:.22em;color:var(--amber)}
 .helpBar button{background:none;border:1px solid var(--line);color:var(--dim);border-radius:8px;
-  font-family:var(--mono);font-size:12px;padding:7px 14px;cursor:pointer}
-.help h3{font-family:var(--mono);font-size:12px;letter-spacing:.16em;color:var(--amber);
+  font-family:var(--mono);font-size:calc(12px * var(--fs));padding:7px 14px;cursor:pointer}
+.help h3{font-family:var(--mono);font-size:calc(12px * var(--fs));letter-spacing:.16em;color:var(--amber);
   margin:22px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .help h3:first-child{margin-top:8px}
-.help p{font-size:13.5px;line-height:1.85;color:var(--tx);margin:8px 0}
+.help p{font-size:calc(13.5px * var(--fs));line-height:1.85;color:var(--tx);margin:8px 0}
 .help ul{margin:8px 0 8px 4px;list-style:none}
-.help li{font-size:13.5px;line-height:1.8;color:var(--tx);padding-left:18px;position:relative;margin:5px 0}
+.help li{font-size:calc(13.5px * var(--fs));line-height:1.8;color:var(--tx);padding-left:18px;position:relative;margin:5px 0}
 .help li::before{content:"▸";position:absolute;left:0;color:var(--amber)}
-.help .k{font-family:var(--mono);font-size:11px;color:var(--amber);background:var(--panel2);
+.help .k{font-family:var(--mono);font-size:calc(11px * var(--fs));color:var(--amber);background:var(--panel2);
   border:1px solid var(--line);border-radius:5px;padding:1px 6px;white-space:nowrap}
-.help .warn{border-left:2px solid var(--rec);padding:8px 12px;margin:10px 0;font-size:12.5px;
+.help .warn{border-left:2px solid var(--rec);padding:8px 12px;margin:10px 0;font-size:calc(12.5px * var(--fs));
   line-height:1.8;color:var(--tx);background:rgba(255,82,82,.05)}
-.help .tip{border-left:2px solid var(--ok);padding:8px 12px;margin:10px 0;font-size:12.5px;
+.help .tip{border-left:2px solid var(--ok);padding:8px 12px;margin:10px 0;font-size:calc(12.5px * var(--fs));
   line-height:1.8;color:var(--tx);background:rgba(79,212,138,.05)}
-.help .dim{color:var(--dim);font-size:12px;line-height:1.8}
-.help code{font-family:var(--mono);font-size:11.5px;color:var(--amber);word-break:break-all}
+.help .dim{color:var(--dim);font-size:calc(12px * var(--fs));line-height:1.8}
+.help code{font-family:var(--mono);font-size:calc(11.5px * var(--fs));color:var(--amber);word-break:break-all}
 .helpFoot{margin-top:28px;padding-top:14px;border-top:1px solid var(--line);
-  font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--dim);text-align:center}
+  font-family:var(--mono);font-size:calc(9px * var(--fs));letter-spacing:.2em;color:var(--dim);text-align:center}
 </style>
 </head>
 <body>
@@ -134,7 +141,15 @@ header{display:flex;justify-content:space-between;align-items:center;
 </header>
 
 <div id="settings">
-  <div class="sTitle">AI SETTINGS</div>
+  <div class="sTitle">表示設定</div>
+  <label>文字サイズ</label>
+  <div class="fsRow">
+    <button id="fsDown" type="button" aria-label="文字を小さく">A－</button>
+    <span id="fsPct">100%</span>
+    <button id="fsUp" type="button" aria-label="文字を大きく">A＋</button>
+  </div>
+
+  <div class="sTitle" style="margin-top:20px">AI SETTINGS</div>
   <label>PROVIDER</label>
   <select id="cfgProv">
     <option value="anthropic">Anthropic (Claude)</option>
@@ -269,6 +284,19 @@ let wakeLock=null, playingAudio=null, playingBtn=null;
 const $=id=>document.getElementById(id);
 const statusEl=$("status");
 const setStatus=(msg,warn)=>{statusEl.textContent=msg||"";statusEl.style.color=warn?"var(--rec)":"var(--dim)"};
+
+/* ---------- font scale ---------- */
+const FS_MIN=0.9, FS_MAX=1.6, FS_STEP=0.1;
+let fontScale=parseFloat(localStorage.getItem("vl_fontscale"))||1;
+function applyFontScale(){
+  fontScale=Math.min(FS_MAX,Math.max(FS_MIN,Math.round(fontScale*10)/10));
+  document.documentElement.style.setProperty("--fs",fontScale);
+  $("fsPct").textContent=Math.round(fontScale*100)+"%";
+  localStorage.setItem("vl_fontscale",fontScale);
+}
+applyFontScale();
+$("fsDown").onclick=()=>{fontScale-=FS_STEP; applyFontScale()};
+$("fsUp").onclick=()=>{fontScale+=FS_STEP; applyFontScale()};
 
 /* ---------- mode chips ---------- */
 const AUTOREC=location.hash.includes("autorec");
