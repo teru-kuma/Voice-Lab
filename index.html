@@ -124,7 +124,7 @@ header{display:flex;justify-content:space-between;align-items:center;
 </head>
 <body>
 <header>
-  <div class="brand">VOICE LAB<small>TERU LAB · FIELD RECORDER</small></div>
+  <div class="brand">VOICE LAB<small>TERU LAB · FIELD RECORDER · <span id="verTx"></span></small></div>
   <div class="hRight">
     <div class="led" id="led"><i></i><span id="ledTx">STANDBY</span></div>
     <button class="gearBtn" id="helpBtn" aria-label="使い方">?</button>
@@ -252,6 +252,11 @@ header{display:flex;justify-content:space-between;align-items:center;
 
 <script>
 "use strict";
+/* ---------- version ---------- */
+const APP_VERSION="v7 (stt-dedup)"; // sw.js の CACHE 名の数字と合わせて更新する
+console.log("[VOICE LAB]", APP_VERSION);
+document.getElementById("verTx").textContent=APP_VERSION;
+
 /* ---------- state ---------- */
 let mode = (location.hash.match(/m=(\w+)/)||[])[1] || "both";
 if(!["both","rec","stt"].includes(mode)) mode = "both";
